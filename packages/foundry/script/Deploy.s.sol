@@ -1,9 +1,9 @@
-//SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
 import "./DeployHelpers.s.sol";
-import { DeployYourContract } from "./DeployYourContract.s.sol";
-
+import { DeployStartTheFun } from "./DeployStartTheFun.s.sol";
+import { DeploySomeFunContract } from "./DeploySomeFunContract.s.sol";
 /**
  * @notice Main deployment script for all contracts
  * @dev Run this when you want to deploy multiple contracts at once
@@ -15,11 +15,10 @@ contract DeployScript is ScaffoldETHDeploy {
         // Deploys all your contracts sequentially
         // Add new deployments here when needed
 
-        DeployYourContract deployYourContract = new DeployYourContract();
-        deployYourContract.run();
+        DeploySomeFunContract someFunContract = new DeploySomeFunContract();
+        address deployedSomeFunContract = someFunContract.run();
 
-        // Deploy another contract
-        // DeployMyContract myContract = new DeployMyContract();
-        // myContract.run();
+        DeployStartTheFun deployStartTheFun = new DeployStartTheFun();
+        deployStartTheFun.run();
     }
 }
