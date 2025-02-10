@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { formatEther } from "viem";
 import { useAccount } from "wagmi";
@@ -26,11 +26,20 @@ export default function GamePage() {
     args: [gameId],
   });
 
-  const { data: isStaked } = useScaffoldReadContract({
+  const { data: stakedAddresses } = useScaffoldReadContract({
     contractName: "StartTheFun",
-    functionName: "games",
-    args: gameId && connectedAddress ? [gameId, connectedAddress] : undefined,
+    functionName: "getStakedAddresses",
+    args: [gameId],
   });
+
+  const [isUserStaked, setIsUserStaked] = useState(false);
+
+  useEffect(() => {
+    if (stakedAddresses && connectedAddress) {
+      const isStaked = stakedAddresses.includes(connectedAddress);
+      setIsUserStaked(isStaked);
+    }
+  }, [stakedAddresses, connectedAddress]);
 
   const { writeContractAsync: writeStartTheFunAsync } = useScaffoldWriteContract({
     contractName: "StartTheFun",
@@ -74,6 +83,17 @@ export default function GamePage() {
       });
     } catch (error) {
       console.error("Error starting game:", error);
+    }
+  };
+
+  const handleUnstake = async () => {
+    try {
+      await writeStartTheFunAsync({
+        functionName: "unstake",
+        args: [gameId],
+      });
+    } catch (error) {
+      console.error("Error unstaking:", error);
     }
   };
 
@@ -137,8 +157,13 @@ export default function GamePage() {
 
           {/* User Status Card */}
           <div className="bg-base-100 border-base-300 border shadow-md rounded-3xl p-6">
-            {isStaked ? (
-              <h2 className="text-2xl font-bold mb-4">You are staked!</h2>
+            {isUserStaked ? (
+              <>
+                <h2 className="text-2xl font-bold mb-4">You are staked!</h2>
+                <button className="btn btn-secondary" onClick={handleUnstake}>
+                  Unstake
+                </button>
+              </>
             ) : (
               <div className="stats shadow">
                 <button className="btn btn-primary" onClick={handleStake}>

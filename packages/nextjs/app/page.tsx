@@ -1,18 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import type { NextPage } from "next";
 import { parseEther } from "viem";
 import { useAccount } from "wagmi";
 import { AddressInput } from "~~/components/scaffold-eth";
-import { useScaffoldEventHistory, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
+import { useScaffoldEventHistory, useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 import { useDeployedContractInfo } from "~~/hooks/scaffold-eth";
 
 const Home: NextPage = () => {
-  const router = useRouter();
   const { address: connectedAddress } = useAccount();
   const { data: deployedFunContract } = useDeployedContractInfo({ contractName: "StartTheFun" });
+  const { writeContractAsync: writeStartTheFun } = useScaffoldWriteContract("StartTheFun");
 
   const [formData, setFormData] = useState({
     whereTheFunIs: "",
@@ -30,33 +29,24 @@ const Home: NextPage = () => {
     }
   }, [deployedFunContract?.address]);
 
-  const { writeContractAsync: writeStartTheFun } = useScaffoldWriteContract("StartTheFun");
-
-  const {
-    data: gameCreatedEvents,
-    isLoading: isLoadingEvents,
-    error: errorReadingEvents,
-  } = useScaffoldEventHistory({
+  const { data: gameCreatedEvents } = useScaffoldEventHistory({
     contractName: "StartTheFun",
     eventName: "GameCreated",
     fromBlock: BigInt(0),
     watch: true,
     filters: { creator: connectedAddress },
-    blockData: true,
-    transactionData: true,
-    receiptData: true,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const tx = await writeStartTheFun({
+      await writeStartTheFun({
         functionName: "createGame",
         args: [
           formData.whereTheFunIs,
           parseEther(formData.price),
           parseEther(formData.totalRequired),
-          BigInt(Number(formData.deadline) * 60), // Convert minutes to seconds
+          BigInt(Number(formData.deadline) * 60),
         ],
       });
     } catch (e) {
@@ -75,16 +65,20 @@ const Home: NextPage = () => {
           <div className="max-w-md mx-auto mb-8">
             <h2 className="text-2xl font-bold mb-4">Your Created Games</h2>
             <div className="space-y-2">
-              {gameCreatedEvents.map(event => (
-                <div key={event.args.gameId.toString()} className="card bg-base-200 p-4">
-                  <div className="flex justify-between items-center">
-                    <span>Game #{event.args.gameId.toString()}</span>
-                    <a href={`/${event.args.gameId.toString()}`} className="btn btn-sm btn-primary">
-                      View Game
-                    </a>
+              {gameCreatedEvents.map(event => {
+                const gameId = event.args.gameId;
+
+                return (
+                  <div key={gameId.toString()} className="card bg-base-200 p-4">
+                    <div className="flex justify-between items-center">
+                      <span>Game #{gameId.toString()}</span>
+                      <a href={`/${gameId.toString()}`} className="btn btn-sm btn-primary">
+                        View Game
+                      </a>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
